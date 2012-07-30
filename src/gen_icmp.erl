@@ -43,7 +43,8 @@
     send/3,
     controlling_process/2,
     setopts/2,
-    family/1
+    family/1,
+    setsockopt/4
     ]).
 -export([recv/2, recv/3]).
 -export([ping/1, ping/2, ping/3]).
@@ -164,6 +165,8 @@ ping(Socket, Hosts, Options) when is_pid(Socket), is_list(Hosts), is_list(Option
             Errors ++ Timeouts ++ Replies
     end.
 
+setsockopt(Pid, L, K, V) ->
+    gen_server:call(Pid, {setsockopt, L, K, V}).
 
 %%-------------------------------------------------------------------------
 %%% Callbacks
@@ -195,6 +198,9 @@ init([Pid, RawOpts, SockOpts]) ->
             s = Socket
         }}.
 
+handle_call({setsockopt, L, K, V}, _From, #state{raw=FD}=State) ->
+    Reply = procket:setsockopt(FD, L, K, V),
+    {reply, Reply, State};
 handle_call(close, {Pid,_}, #state{pid = Pid, s = Socket} = State) ->
     {stop, normal, gen_udp:close(Socket), State};
 handle_call({send, IP, Packet}, _From, #state{s = Socket} = State) ->
